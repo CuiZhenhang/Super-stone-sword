@@ -21,7 +21,7 @@ Recipes.addShaped({id: ItemID.SuperSword5, count: 1, data: 0}, ["aaa","aba","aaa
 随机[ItemID.SuperSword4]= -1;
 随机[ItemID.SuperSword5]= -2;
 设置={"秒杀":true, "阻止自定义生成":false, "反伤":true, "不完全免伤":true, "完全免伤":true, "飞行":true, "隐藏物品":[false, {}]};
-备份=[Entity.spawnCustomAtCoords, Entity.damageEntity, Entity.remove, Entity.setHealth, Entity.setMaxHealth];
+备份=[Entity.spawnCustomAtCoords, Entity.spawnCustom, Entity.healEntity, Entity.damageEntity, Entity.remove, Entity.setHealth, Entity.setMaxHealth, Player.health, Player.setHealth];
 负面=[2,4,7,9,15,17,18,19,20,25,28];
 var getmode=ModAPI.requireGlobal("Level.getGameMode");
 
@@ -102,13 +102,13 @@ if(设置.隐藏物品[0]){
 };
 });
 
-Callback.addCallback("PostLoaded", function(){
-setUI_.秒杀.ui.window.getContent().drawing[0].bitmap="button0";
-setUI_.阻止自定义生成.ui.window.getContent().drawing[0].bitmap="button1";
-setUI_.反伤.ui.window.getContent().drawing[0].bitmap="button0";
-setUI_.不完全免伤.ui.window.getContent().drawing[0].bitmap="button0";
-setUI_.完全免伤.ui.window.getContent().drawing[0].bitmap="button0";
-setUI_.隐藏物品.ui.window.getContent().drawing[0].bitmap="button1";
+Callback.addCallback("LevelLoaded", function(){
+setUI_.秒杀.ui.window.getContent().drawing[0].bitmap=设置.秒杀?"button0":"button1";
+setUI_.阻止自定义生成.ui.window.getContent().drawing[0].bitmap=设置.阻止自定义生成?"button0":"button1";
+setUI_.反伤.ui.window.getContent().drawing[0].bitmap=设置.反伤?"button0":"button1";
+setUI_.不完全免伤.ui.window.getContent().drawing[0].bitmap=设置.不完全免伤?"button0":"button1";
+setUI_.完全免伤.ui.window.getContent().drawing[0].bitmap=设置.完全免伤?"button0":"button1";
+setUI_.隐藏物品.ui.window.getContent().drawing[0].bitmap=设置.隐藏物品[0]?"button0":"button1";
 });
 
 Callback.addCallback("tick", function(){try{
@@ -145,27 +145,35 @@ if(随机[Player.getCarriedItem().id]<2||设置.隐藏物品[0]){
 
 Callback.addCallback("tick", function(){
 if(设置.阻止自定义生成){
-  Entity.spawnCustomAtCoords=备份[0];
+  Entity.spawnCustomAtCoords=备份[0]; Entity.spawnCustom=备份[1];
   if(随机[Player.getCarriedItem().id]<1||设置.隐藏物品[0]){
     Entity.spawnCustomAtCoords=function(n,c,e){
       Game.message("§9"+Translation.translate("已阻止自定义实体生成"));
       return Entity.spawn(c.x, -30, c.z, 81);
     };
+    Entity.spawnCustom=function(n,x,y,z,e){
+      Game.message("§9"+Translation.translate("已阻止自定义实体生成"));
+      return Entity.spawn(x, -30, z, 81);
+    };
   };
 };
 if(设置.完全免伤){
-    Entity.damageEntity=备份[1]; Entity.remove=备份[2];
-    Entity.setHealth=备份[3]; Entity.setMaxHealth=备份[4];
+    Entity.healthEntity=备份[2]; Entity.damageEntity=备份[3]; Entity.remove=备份[4];
+    Entity.setHealth=备份[5]; Entity.setMaxHealth=备份[6];
+    Player.health=备份[7]; Player.setHealth=备份[8];
   if(随机[Player.getCarriedItem().id]<0||设置.隐藏物品[0]){
     if(World.getThreadTime()%5==0){Entity.addEffect(Player.get(), 12, 0, 20, true)};
     Entity.setMaxHealth(Player.get(), 20);
     Entity.setHealth(Player.get(), 20);
     Player.setHunger(20);
     负面.map(function(i){Entity.clearEffect(Player.get(), i)});
-    Entity.damageEntity=function(a,b){if(a==Player.get()){return}; 备份[1](a,b)};
-    Entity.remove=function(a){if(a==Player.get()){return}; 备份[2](a)};
-    Entity.setHealth=function(a,b){if(a==Player.get()&&b<20){return}; 备份[3](a,b)};
-    Entity.setMaxHealth=function(a,b){if(a==Player.get()&&b<20){return}; 备份[4](a,b)};
+    Entity.healthEntity=function(a,b){if(a==Player.get()&&b<0){return}; 备份[2](a,b)};
+    Entity.damageEntity=function(a,b){if(a==Player.get()){return}; 备份[3](a,b)};
+    Entity.remove=function(a){if(a==Player.get()){return}; 备份[4](a)};
+    Entity.setHealth=function(a,b){if(a==Player.get()&&b<20){return}; 备份[5](a,b)};
+    Entity.setMaxHealth=function(a,b){if(a==Player.get()&&b<20){return}; 备份[6](a,b)};
+    Player.setHealth=function(a){if(a<20){return}; 备份[7](a)};
+    Player.health=function(){return {set: Player.setHealth, get: Player.getHealth}};
   };
 };
 if(随机[Player.getCarriedItem().id]<0||设置.隐藏物品[0]){
